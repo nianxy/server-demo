@@ -45,6 +45,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'success',
     message: 'Server is running',
+    app_name: process.env.APP_NAME || 'demo-server',
     timestamp: new Date().toISOString(),
   });
 });
@@ -119,14 +120,32 @@ app.get('/api/redis', async (req, res) => {
   }
 });
 
+// Endpoint 5: Test external network access
+app.get('/api/external', async (req, res) => {
+  try {
+    const response = await fetch('https://httpbin.org/get');
+    const data = await response.json();
+    res.json({
+      status: 'success',
+      data: data,
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: err.message,
+    });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Endpoints:`);
-  console.log(`  GET  /api/health   - Server health check`);
-  console.log(`  GET  /api/postgres - PostgreSQL test data`);
-  console.log(`  POST /api/redis    - Write data to Redis`);
-  console.log(`  GET  /api/redis    - Read data from Redis`);
+  console.log(`  GET  /api/health    - Server health check`);
+  console.log(`  GET  /api/postgres  - PostgreSQL test data`);
+  console.log(`  POST /api/redis     - Write data to Redis`);
+  console.log(`  GET  /api/redis     - Read data from Redis`);
+  console.log(`  GET  /api/external  - Test external network access`);
 });
 
 // Graceful shutdown
