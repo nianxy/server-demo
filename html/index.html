@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server Demo - API Test</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2.5rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    .endpoint {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      transition: transform 0.2s;
+    }
+    .endpoint:hover {
+      transform: translateY(-2px);
+    }
+    .endpoint-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .method {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+    }
+    .method.get { background: #10b981; color: white; }
+    .method.post { background: #3b82f6; color: white; }
+    .path {
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 1.1rem;
+      color: #374151;
+      flex: 1;
+    }
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    button:hover { opacity: 0.9; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .response {
+      background: #1f2937;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+      display: none;
+    }
+    .response.show { display: block; }
+    .response pre {
+      color: #10b981;
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      margin-left: 10px;
+    }
+    .status.success { background: #10b981; color: white; }
+    .status.error { background: #ef4444; color: white; }
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #ffffff30;
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 Server Demo API Test</h1>
+    
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method get">GET</span>
+        <span class="path">/api/health</span>
+        <button onclick="testEndpoint('GET', '/api/health', 'health-result')">Test</button>
+      </div>
+      <div class="response" id="health-result"></div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method get">GET</span>
+        <span class="path">/api/postgres</span>
+        <button onclick="testEndpoint('GET', '/api/postgres', 'postgres-result')">Test</button>
+      </div>
+      <div class="response" id="postgres-result"></div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method post">POST</span>
+        <span class="path">/api/redis</span>
+        <button onclick="testEndpoint('POST', '/api/redis', 'redis-write-result')">Write</button>
+      </div>
+      <div class="response" id="redis-write-result"></div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method get">GET</span>
+        <span class="path">/api/redis</span>
+        <button onclick="testEndpoint('GET', '/api/redis', 'redis-read-result')">Read</button>
+      </div>
+      <div class="response" id="redis-read-result"></div>
+    </div>
+  </div>
+
+  <script>
+    async function testEndpoint(method, path, resultId) {
+      const resultEl = document.getElementById(resultId);
+      const button = event.target;
+      button.disabled = true;
+      button.innerHTML = '<span class="loading"></span>Loading...';
+      
+      resultEl.classList.add('show');
+      
+      try {
+        const response = await fetch(path, { method });
+        const data = await response.json();
+        const statusClass = response.ok ? 'success' : 'error';
+        resultEl.innerHTML = `
+          <span class="status ${statusClass}">${response.status} ${response.statusText}</span>
+          <pre>${JSON.stringify(data, null, 2)}</pre>
+        `;
+      } catch (error) {
+        resultEl.innerHTML = `
+          <span class="status error">Error</span>
+          <pre>${error.message}</pre>
+        `;
+      } finally {
+        button.disabled = false;
+        button.textContent = method === 'POST' ? 'Write' : 'Test';
+      }
+    }
+  </script>
+</body>
+</html>
