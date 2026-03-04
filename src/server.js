@@ -2,6 +2,7 @@ const express = require('express');
 const { Pool } = require('pg');
 const { createClient } = require('redis');
 const path = require('path');
+const packageJson = require('../package.json');
 
 const app = express();
 app.use(express.json());
@@ -25,9 +26,11 @@ const redisClient = createClient({
   socket: {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379'),
+    connectTimeout: 5000,
   },
   password: process.env.REDIS_PASSWORD || undefined,
   database: parseInt(process.env.REDIS_DB || '0'),
+  clientInfoTag: process.env.APP_NAME || 'demo-server',
 });
 
 // Connect to Redis on startup
@@ -46,6 +49,7 @@ app.get('/api/health', (req, res) => {
     status: 'success',
     message: 'Server is running',
     app_name: process.env.APP_NAME || 'demo-server',
+    version: packageJson.version,
     timestamp: new Date().toISOString(),
   });
 });
@@ -65,6 +69,7 @@ app.get('/api/postgres', async (req, res) => {
       data: result.rows[0],
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({
       status: 'error',
       message: err.message,
@@ -87,6 +92,7 @@ app.post('/api/redis', async (req, res) => {
       },
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({
       status: 'error',
       message: err.message,
@@ -113,6 +119,7 @@ app.get('/api/redis', async (req, res) => {
       },
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({
       status: 'error',
       message: err.message,
@@ -122,14 +129,17 @@ app.get('/api/redis', async (req, res) => {
 
 // Endpoint 5: Test external network access
 app.get('/api/external', async (req, res) => {
+  const target = "https://httpbin.org/get";
   try {
-    const response = await fetch('https://httpbin.org/get');
+    const response = await fetch(target);
     const data = await response.json();
     res.json({
       status: 'success',
-      data: data,
+      target: target,
+      response: data,
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({
       status: 'error',
       message: err.message,
