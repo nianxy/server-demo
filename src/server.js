@@ -27,6 +27,9 @@ const redisClient = createClient({
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379'),
     connectTimeout: 5000,
+    tls: process.env.REDIS_TLS_ENABLED === 'true' ? {
+      rejectUnauthorized: process.env.REDIS_TLS_REJECT_UNAUTHORIZED !== 'false',
+    } : undefined,
   },
   password: process.env.REDIS_PASSWORD || undefined,
   database: parseInt(process.env.REDIS_DB || '0'),
