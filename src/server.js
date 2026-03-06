@@ -1,6 +1,6 @@
 const express = require('express');
 const { Pool } = require('pg');
-const { createClient } = require('redis');
+const Redis = require('ioredis');
 const path = require('path');
 const packageJson = require('../package.json');
 
@@ -24,24 +24,24 @@ const pgPool = new Pool({
   password: process.env.PG_PASSWORD || 'postgres',
 });
 
-// Redis client
-const redisClient = createClient({
-  socket: {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    connectTimeout: 5000,
-    tls: process.env.REDIS_TLS_ENABLED === 'true',
-    rejectUnauthorized: process.env.REDIS_TLS_REJECT_UNAUTHORIZED !== 'false',
-  },
+// Redis client with keyPrefix
+const redisClient = new Redis({
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT || '6379'),
+  db: parseInt(process.env.REDIS_DB || '0'),
+  keyPrefix: process.env.REDIS_KEY_PREFIX || undefined,
+  connectTimeout: 5000,
+  username: process.env.REDIS_USER || undefined,
   password: process.env.REDIS_PASSWORD || undefined,
-  database: parseInt(process.env.REDIS_DB || '0'),
-  clientInfoTag: process.env.APP_NAME || 'demo-server',
+  tls: process.env.REDIS_TLS_ENABLED === 'true' ? {
+    rejectUnauthorized: process.env.REDIS_TLS_REJECT_UNAUTHORIZED !== 'false',
+  } : undefined,
 });
 
 // Connect to Redis on startup
 (async () => {
   try {
-    await redisClient.connect();
+    await redisClient.ping();
     console.log('Connected to Redis');
   } catch (err) {
     console.error('Redis connection error:', err.message);
@@ -85,9 +85,9 @@ app.get('/api/postgres', async (req, res) => {
 // Endpoint 3: Write test data to Redis
 app.post('/api/redis', async (req, res) => {
   try {
-    const testKey = 'demo:test';
+    const testKey = 'test';
     const testValue = `Hello from Redis - ${new Date().toISOString()}`;
-    await redisClient.set(testKey, testValue, { EX: 3600 });
+    await redisClient.set(testKey, testValue, 'EX', 3600);
     res.json({
       status: 'success',
       data: {
@@ -108,7 +108,7 @@ app.post('/api/redis', async (req, res) => {
 // Endpoint 4: Read test data from Redis
 app.get('/api/redis', async (req, res) => {
   try {
-    const testKey = 'demo:test';
+    const testKey = 'test';
     const value = await redisClient.get(testKey);
     if (!value) {
       return res.status(404).json({
